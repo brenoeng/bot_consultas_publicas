@@ -1,0 +1,115 @@
+name: 🔄 Scraper - Consultas Públicas MME
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # Todos os dias às 08:00 UTC
+    - cron: "0 12 * * *" # Também ao meio-dia
+    - cron: "0 18 * * *" # E às 18:00
+  workflow_dispatch: # Permite execução manual
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  scraper:
+    name: 🕷️ Executar Scraper de Consultas
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Fazer checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 Setup Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: 📦 Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🔄 Executar scraper
+        run: |
+          python scraper.py
+        continue-on-error: true
+
+      - name: 📊 Validar dados
+        run: |
+          if [ -f data/consultas.json ]; then
+            echo "✓ Arquivo data/consultas.json criado"
+            python -m json.tool data/consultas.json > /dev/null && echo "✓ JSON válido"
+          else
+            echo "⚠ Arquivo não criado - usando dados de exemplo"
+          fi
+
+      - name: 🔔 Verificar alertas (7 dias)
+        run: |
+          python -c "
+          import json
+          from datetime import datetime
+
+          try:
+            with open('data/consultas.json') as f:
+              data = json.load(f)
+            
+            count = 0
+            for c in data.get('consultas', []):
+              if c.get('dias_restantes') == 7 and not c.get('notificado'):
+                print(f\"🔔 ALERTA: '{c['titulo'][:50]}' encerra em 7 dias!\")
+                count += 1
+            
+            if count == 0:
+              print('✓ Nenhuma consulta para alertar agora')
+          except Exception as e:
+            print(f'ℹ Verificação de alertas: {e}')
+          "
+        continue-on-error: true
+
+      - name: 💾 Commit de mudanças
+        run: |
+          git config user.name "🤖 Bot Consultas"
+          git config user.email "bot@consultas-publicas.dev"
+
+          if git diff --quiet data/consultas.json 2>/dev/null; then
+            echo "ℹ Sem alterações nos dados"
+          else
+            echo "📝 Alterações detectadas, commitando..."
+            git add data/consultas.json
+            git commit -m "🔄 chore: atualizar dados de consultas públicas"
+            git push origin main 2>&1 || echo "Push já atualizado"
+          fi
+
+      - name: 📄 Deploy GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          force_orphan: false
+        continue-on-error: true
+
+  notify-status:
+    name: 📧 Notificar Status (Opcional)
+    runs-on: ubuntu-latest
+    needs: scraper
+    if: always()
+
+    steps:
+      - name: 📧 Enviar notificação (desabilitada)
+        run: |
+          echo "Notificação de status do scraper"
+          echo "Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo "Status: Scraper executado"
+          echo ""
+          echo "💡 Para ativar notificações WhatsApp:"
+          echo "1. Configure secrets no GitHub:"
+          echo "   - TWILIO_ACCOUNT_SID"
+          echo "   - TWILIO_AUTH_TOKEN"
+          echo "   - TWILIO_PHONE_NUMBER"
+          echo "   - WHATSAPP_TARGETS"
+          echo "2. Descomente a seção de notificações em notifier.py"

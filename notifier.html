@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifier - Consultas Públicas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50">
+    <div class="min-h-screen">
+      <header
+        class="bg-gradient-to-r from-green-600 to-green-800 text-white shadow-lg"
+      >
+        <div class="max-w-7xl mx-auto px-4 py-8">
+          <h1 class="text-3xl font-bold">💬 Notificador WhatsApp</h1>
+          <p class="text-green-100 mt-2">
+            Envie alertas sobre consultas públicas
+          </p>
+        </div>
+      </header>
+
+      <main class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Instructions -->
+        <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded">
+          <h3 class="font-bold text-green-900 mb-2">📱 Configuração Twilio:</h3>
+          <p class="text-sm text-green-800 mb-2">
+            Para usar este notificador, você precisa:
+          </p>
+          <ol class="text-sm text-green-800 list-decimal list-inside space-y-1">
+            <li>
+              Conta no
+              <a
+                href="https://www.twilio.com"
+                target="_blank"
+                class="underline font-bold"
+                >Twilio.com</a
+              >
+            </li>
+            <li>Ativar WhatsApp nos seus Messaging Services</li>
+            <li>Adicionar seus números como "destinatários"</li>
+            <li>Preencher os dados abaixo com suas credenciais</li>
+          </ol>
+        </div>
+
+        <!-- Configuration Form -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 class="font-bold text-lg mb-4">⚙️ Configuração</h3>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2"
+                >Account SID (Twilio)</label
+              >
+              <input
+                type="text"
+                id="accountSid"
+                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500"
+                value=""
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2"
+                >Auth Token (Twilio)</label
+              >
+              <input
+                type="password"
+                id="authToken"
+                placeholder="seu_auth_token_aqui"
+                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500"
+                value=""
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2"
+                >Número Twilio (com +55 para Brasil)</label
+              >
+              <input
+                type="text"
+                id="twilioNumber"
+                placeholder="+551122334455"
+                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500"
+                value=""
+              />
+              <p class="text-xs text-gray-600 mt-1">
+                Use o número do seu Twilio verificado
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2"
+                >Números para Notificar (separados por vírgula)</label
+              >
+              <textarea
+                id="targetNumbers"
+                placeholder="+5511999999999,+5521988888888"
+                rows="3"
+                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500 font-mono text-sm"
+              ></textarea>
+              <p class="text-xs text-gray-600 mt-1">
+                Use formato: +55 + DDD + número
+              </p>
+            </div>
+
+            <div class="flex gap-2">
+              <button
+                onclick="saveConfig()"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition"
+              >
+                💾 Salvar Configuração
+              </button>
+              <button
+                onclick="loadConfig()"
+                class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition"
+              >
+                🔄 Carregar
+              </button>
+              <button
+                onclick="clearConfig()"
+                class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition"
+              >
+                🗑️ Limpar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notification Test -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 class="font-bold text-lg mb-4">📤 Testar Notificação</h3>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2"
+                >Título da Consulta</label
+              >
+              <input
+                type="text"
+                id="testTitle"
+                placeholder="Exemplo: Consulta Pública nº 42/2025"
+                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2"
+                >Data de Encerramento</label
+              >
+              <input
+                type="date"
+                id="testDate"
+                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2"
+                >URL da Consulta</label
+              >
+              <input
+                type="url"
+                id="testUrl"
+                placeholder="https://consultas-publicas.mme.gov.br/..."
+                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2"
+                >Descrição</label
+              >
+              <textarea
+                id="testDesc"
+                placeholder="Descrição breve da consulta"
+                rows="3"
+                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500"
+              ></textarea>
+            </div>
+
+            <button
+              onclick="sendTestNotification()"
+              class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition"
+            >
+              ✉️ Enviar Notificação de Teste
+            </button>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 class="font-bold text-lg mb-4">👁️ Preview da Mensagem</h3>
+          <div
+            id="messagePreview"
+            class="bg-green-50 border-2 border-green-300 rounded p-4 text-sm font-mono whitespace-pre-wrap overflow-auto max-h-48"
+          >
+            🚨 ALERTA DE CONSULTA PÚBLICA 🚨 📋 [Título não preenchido] ⏰
+            Encerra em [X] dias 📅 Data: [Data não preenchida] 📝 [Descrição...]
+            🔗 Acesse: [URL não preenchida] --- Bot de Monitoramento de
+            Consultas Públicas do MME
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div id="status" class="bg-white rounded-lg shadow p-4">
+          <p id="statusText" class="text-gray-600">Aguardando ação...</p>
+        </div>
+      </main>
+
+      <footer class="bg-gray-800 text-gray-400 mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 text-center text-sm">
+          <p>Ferramenta de Notificação • Bot de Consultas Públicas do MME</p>
+          <p class="mt-2 text-xs">
+            ⚠️ Este é um simulador. Para envios reais, use a API Twilio
+            diretamente.
+          </p>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      function calculateDaysRemaining(dateStr) {
+        if (!dateStr) return null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const [year, month, day] = dateStr.split("-").map(Number);
+        const encerramento = new Date(year, month - 1, day);
+        const diffTime = encerramento - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+      }
+
+      function formatDate(dateStr) {
+        if (!dateStr) return "N/A";
+        const [year, month, day] = dateStr.split("-");
+        return `${day}/${month}/${year}`;
+      }
+
+      function updateStatus(message, isError = false) {
+        const statusEl = document.getElementById("statusText");
+        statusEl.textContent = message;
+        statusEl.className = isError
+          ? "text-red-600 font-bold"
+          : "text-green-600 font-bold";
+      }
+
+      function saveConfig() {
+        const config = {
+          accountSid: document.getElementById("accountSid").value,
+          authToken: document.getElementById("authToken").value,
+          twilioNumber: document.getElementById("twilioNumber").value,
+          targetNumbers: document
+            .getElementById("targetNumbers")
+            .value.split(",")
+            .map((n) => n.trim())
+            .filter(Boolean),
+        };
+
+        if (
+          !config.accountSid ||
+          !config.authToken ||
+          !config.twilioNumber ||
+          config.targetNumbers.length === 0
+        ) {
+          updateStatus("❌ Preencha todos os campos!", true);
+          return;
+        }
+
+        localStorage.setItem("twilioConfig", JSON.stringify(config));
+        updateStatus("✅ Configuração salva com sucesso!");
+      }
+
+      function loadConfig() {
+        const config = localStorage.getItem("twilioConfig");
+        if (config) {
+          const parsed = JSON.parse(config);
+          document.getElementById("accountSid").value = parsed.accountSid;
+          document.getElementById("authToken").value = parsed.authToken;
+          document.getElementById("twilioNumber").value = parsed.twilioNumber;
+          document.getElementById("targetNumbers").value =
+            parsed.targetNumbers.join(",\n");
+          updateStatus("✅ Configuração carregada");
+        } else {
+          updateStatus("⚠️ Nenhuma configuração salva", true);
+        }
+      }
+
+      function clearConfig() {
+        if (confirm("Tem certeza que deseja limpar as credenciais?")) {
+          localStorage.removeItem("twilioConfig");
+          document.getElementById("accountSid").value = "";
+          document.getElementById("authToken").value = "";
+          document.getElementById("twilioNumber").value = "";
+          document.getElementById("targetNumbers").value = "";
+          updateStatus("🗑️ Configuração removida");
+        }
+      }
+
+      function updateMessagePreview() {
+        const title =
+          document.getElementById("testTitle").value ||
+          "[Título não preenchido]";
+        const date = document.getElementById("testDate").value;
+        const url =
+          document.getElementById("testUrl").value || "[URL não preenchida]";
+        const desc =
+          document.getElementById("testDesc").value || "[Descrição...]";
+        const dias = date ? calculateDaysRemaining(date) : "[X]";
+
+        const message = `🚨 ALERTA DE CONSULTA PÚBLICA 🚨
+
+📋 ${title}
+
+⏰ Encerra em ${dias} dia${dias !== 1 ? "s" : ""}
+📅 Data: ${formatDate(date)}
+
+📝 ${desc}
+
+🔗 Acesse: ${url}
+
+---
+Bot de Monitoramento de Consultas Públicas do MME`;
+
+        document.getElementById("messagePreview").textContent = message;
+      }
+
+      async function sendTestNotification() {
+        const config = localStorage.getItem("twilioConfig");
+        if (!config) {
+          updateStatus("❌ Salve a configuração Twilio primeiro!", true);
+          return;
+        }
+
+        const title = document.getElementById("testTitle").value;
+        const date = document.getElementById("testDate").value;
+        const url = document.getElementById("testUrl").value;
+
+        if (!title || !date || !url) {
+          updateStatus("❌ Preencha todos os campos!", true);
+          return;
+        }
+
+        try {
+          updateStatus("📤 Enviando notificação...");
+
+          // Simulate sending
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+
+          const parsed = JSON.parse(config);
+          updateStatus(
+            `✅ Notificação enviada para ${parsed.targetNumbers.length} contato(s)! (Simulado)`
+          );
+
+          // Log for debugging
+          console.log("Seria enviado para:", parsed.targetNumbers);
+        } catch (error) {
+          updateStatus(`❌ Erro: ${error.message}`, true);
+        }
+      }
+
+      // Auto-update preview
+      document
+        .getElementById("testTitle")
+        .addEventListener("input", updateMessagePreview);
+      document
+        .getElementById("testDate")
+        .addEventListener("change", updateMessagePreview);
+      document
+        .getElementById("testUrl")
+        .addEventListener("input", updateMessagePreview);
+      document
+        .getElementById("testDesc")
+        .addEventListener("input", updateMessagePreview);
+
+      // Load config on page load
+      window.addEventListener("DOMContentLoaded", () => {
+        loadConfig();
+
+        // Set today as default test date
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, "0");
+        const dd = String(today.getDate()).padStart(2, "0");
+        document.getElementById("testDate").value = `${yyyy}-${mm}-${dd}`;
+
+        updateMessagePreview();
+      });
+    </script>
+  </body>
+</html>

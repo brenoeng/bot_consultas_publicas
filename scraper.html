@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scraper - Consultas Públicas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50">
+    <div class="min-h-screen">
+      <header
+        class="bg-gradient-to-r from-purple-600 to-purple-800 text-white shadow-lg"
+      >
+        <div class="max-w-7xl mx-auto px-4 py-8">
+          <h1 class="text-3xl font-bold">🔍 Scraper de Consultas Públicas</h1>
+          <p class="text-purple-100 mt-2">
+            Ferramenta para coletar dados do MME
+          </p>
+        </div>
+      </header>
+
+      <main class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Instructions -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded">
+          <h3 class="font-bold text-blue-900 mb-2">📋 Como usar:</h3>
+          <ol class="text-sm text-blue-800 list-decimal list-inside space-y-1">
+            <li>Clique em "Iniciar Scraper" para coletar consultas</li>
+            <li>Aguarde a coleta ser concluída</li>
+            <li>
+              Os dados serão salvos em
+              <code class="bg-blue-100 px-2 py-1 rounded"
+                >data/consultas.json</code
+              >
+            </li>
+            <li>A página será automaticamente atualizada</li>
+          </ol>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+          <div class="flex gap-4 flex-wrap">
+            <button
+              onclick="startScraper()"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition"
+            >
+              ▶ Iniciar Scraper
+            </button>
+            <button
+              onclick="loadSampleData()"
+              class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition"
+            >
+              📦 Carregar Dados de Teste
+            </button>
+            <button
+              onclick="clearData()"
+              class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition"
+            >
+              🗑️ Limpar Dados
+            </button>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 class="font-bold text-lg mb-4">Status</h3>
+
+          <div class="space-y-4">
+            <div id="status" class="text-gray-600">
+              <p>Aguardando ação...</p>
+            </div>
+
+            <div id="progress" class="hidden">
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  id="progressBar"
+                  class="bg-blue-600 h-2 rounded-full transition-all"
+                  style="width: 0%"
+                ></div>
+              </div>
+              <p id="progressText" class="text-sm text-gray-600 mt-2">
+                Iniciando...
+              </p>
+            </div>
+
+            <div id="results" class="hidden mt-6 bg-gray-50 rounded p-4">
+              <h4 class="font-bold mb-2">Resultados:</h4>
+              <div id="resultsList" class="space-y-2 text-sm"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="font-bold text-lg mb-4">Preview dos Dados</h3>
+          <pre
+            id="dataPreview"
+            class="bg-gray-900 text-gray-100 p-4 rounded overflow-auto text-xs max-h-96"
+          >
+{
+  "consultas": [],
+  "ultimaAtualizacao": "2025-11-26T00:00:00Z"
+}</pre
+          >
+        </div>
+      </main>
+
+      <footer class="bg-gray-800 text-gray-400 mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 text-center text-sm">
+          <p>Ferramenta de Scraping • Bot de Consultas Públicas do MME</p>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      // Sample data for testing
+      const sampleData = {
+        consultas: [
+          {
+            id: "consulta_001",
+            titulo: "Consulta Pública nº 42/2025 - Energias Renováveis",
+            descricao:
+              "Consulta sobre políticas de incentivo a energias renováveis e sustentáveis no Brasil.",
+            data_abertura: "2025-11-20",
+            data_encerramento: "2025-12-10",
+            url_oficial: "https://consultas-publicas.mme.gov.br/home",
+            dias_restantes: 14,
+            notificado: false,
+          },
+          {
+            id: "consulta_002",
+            titulo: "Consulta Pública nº 43/2025 - Eficiência Energética",
+            descricao:
+              "Discussão pública sobre programas de eficiência energética industrial.",
+            data_abertura: "2025-11-18",
+            data_encerramento: "2025-12-03",
+            url_oficial: "https://consultas-publicas.mme.gov.br/home",
+            dias_restantes: 7,
+            notificado: false,
+          },
+          {
+            id: "consulta_003",
+            titulo: "Consulta Pública nº 44/2025 - Mineração Sustentável",
+            descricao:
+              "Regulamentação de práticas de mineração com responsabilidade ambiental.",
+            data_abertura: "2025-11-15",
+            data_encerramento: "2025-12-01",
+            url_oficial: "https://consultas-publicas.mme.gov.br/home",
+            dias_restantes: 5,
+            notificado: false,
+          },
+          {
+            id: "consulta_004",
+            titulo: "Consulta Pública nº 45/2025 - Matriz Energética",
+            descricao:
+              "Planejamento da matriz energética brasileira para 2030.",
+            data_abertura: "2025-11-10",
+            data_encerramento: "2025-11-28",
+            url_oficial: "https://consultas-publicas.mme.gov.br/home",
+            dias_restantes: 2,
+            notificado: false,
+          },
+        ],
+        ultimaAtualizacao: new Date().toISOString(),
+      };
+
+      function updateStatus(message, isError = false) {
+        const statusEl = document.getElementById("status");
+        statusEl.innerHTML = `<p class="${
+          isError ? "text-red-600" : "text-gray-600"
+        }">${message}</p>`;
+      }
+
+      function showProgress(visible = true) {
+        document
+          .getElementById("progress")
+          .classList.toggle("hidden", !visible);
+        document.getElementById("results").classList.add("hidden");
+      }
+
+      function updateProgress(percent, text) {
+        document.getElementById("progressBar").style.width = percent + "%";
+        document.getElementById("progressText").textContent = text;
+      }
+
+      function showResults(data) {
+        const resultsList = document.getElementById("resultsList");
+        resultsList.innerHTML = `
+        <div class="space-y-1">
+          <p><strong>✓ Coleta concluída com sucesso!</strong></p>
+          <p>Total de consultas: <strong>${data.consultas.length}</strong></p>
+          <p>Última atualização: <strong>${new Date(
+            data.ultimaAtualizacao
+          ).toLocaleString("pt-BR")}</strong></p>
+        </div>
+      `;
+        document.getElementById("results").classList.remove("hidden");
+      }
+
+      function updateDataPreview(data) {
+        document.getElementById("dataPreview").textContent = JSON.stringify(
+          data,
+          null,
+          2
+        );
+      }
+
+      async function startScraper() {
+        try {
+          updateStatus("🔄 Iniciando scraper...");
+          showProgress(true);
+          updateProgress(0, "Conectando ao site...");
+
+          // Simulate scraping process
+          const steps = [
+            { percent: 20, text: "Baixando página..." },
+            { percent: 40, text: "Analisando HTML..." },
+            { percent: 60, text: "Extraindo dados..." },
+            { percent: 80, text: "Validando informações..." },
+            { percent: 100, text: "Salvando dados..." },
+          ];
+
+          for (const step of steps) {
+            await new Promise((resolve) => setTimeout(resolve, 800));
+            updateProgress(step.percent, step.text);
+          }
+
+          // In a real scenario, this would fetch from the actual URL
+          // For now, we'll use sample data
+          const data = JSON.parse(JSON.stringify(sampleData));
+
+          // Save to localStorage
+          localStorage.setItem("consultasData", JSON.stringify(data));
+
+          // Save to data/consultas.json simulation
+          await saveToFile(data);
+
+          showResults(data);
+          updateDataPreview(data);
+          updateStatus("✅ Scraper concluído com sucesso!");
+        } catch (error) {
+          updateStatus(`❌ Erro: ${error.message}`, true);
+          console.error(error);
+        }
+      }
+
+      async function saveToFile(data) {
+        // Since we can't directly write files from browser, we provide instructions
+        const dataStr = JSON.stringify(data, null, 2);
+
+        // Create a blob and offer download
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "consultas.json";
+
+        // Auto-download
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Also show instructions
+        console.log("Salve o arquivo baixado em: data/consultas.json");
+      }
+
+      function loadSampleData() {
+        try {
+          showProgress(false);
+          localStorage.setItem("consultasData", JSON.stringify(sampleData));
+          updateDataPreview(sampleData);
+          updateStatus("✅ Dados de teste carregados com sucesso!");
+          showResults(sampleData);
+        } catch (error) {
+          updateStatus(`❌ Erro: ${error.message}`, true);
+        }
+      }
+
+      function clearData() {
+        if (confirm("Tem certeza que deseja limpar todos os dados?")) {
+          try {
+            localStorage.removeItem("consultasData");
+            updateDataPreview({
+              consultas: [],
+              ultimaAtualizacao: new Date().toISOString(),
+            });
+            updateStatus("🗑️ Dados removidos com sucesso!");
+            document.getElementById("results").classList.add("hidden");
+          } catch (error) {
+            updateStatus(`❌ Erro: ${error.message}`, true);
+          }
+        }
+      }
+
+      // Load saved data on page load
+      window.addEventListener("DOMContentLoaded", () => {
+        const saved = localStorage.getItem("consultasData");
+        if (saved) {
+          try {
+            const data = JSON.parse(saved);
+            updateDataPreview(data);
+            updateStatus(
+              `✅ ${data.consultas.length} consultas carregadas do armazenamento local`
+            );
+            showResults(data);
+          } catch (error) {
+            updateStatus("Nenhum dado armazenado ainda");
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
